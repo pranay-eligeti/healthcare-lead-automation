@@ -1,3 +1,5 @@
+# 🏥 Healthcare Lead Automation System
+
 > End-to-end Python + n8n pipeline that automatically cleans, filters, and structures healthcare lead data across 14 specialties and 4 states — zero manual intervention.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
@@ -16,6 +18,7 @@ Automates the full lifecycle of healthcare lead data — from raw, contaminated 
 ## The Problem It Solves
 
 Raw healthcare lead files exported from Monday.com were heavily contaminated:
+
 - Urgent Care files contained primary care clinics and unrelated businesses
 - No consistent specialty or state filtering
 - Required hours of manual cleaning per batch
@@ -59,15 +62,15 @@ Monday.com (bad-contact flagged)
 
 ## Tech Stack
 
-| Tool | Purpose |
-|------|---------|
-| Python 3.10+ | Core pipeline logic |
-| pandas | Data loading, filtering, transformation |
-| n8n | Webhook trigger and workflow orchestration |
-| Monday.com API | Bad-contact detection and board integration |
+| Tool              | Purpose                                            |
+| ----------------- | -------------------------------------------------- |
+| Python 3.10+      | Core pipeline logic                                |
+| pandas            | Data loading, filtering, transformation            |
+| n8n               | Webhook trigger and workflow orchestration         |
+| Monday.com API    | Bad-contact detection and board integration        |
 | Google Places API | Provider validation and placeholder row resolution |
-| regex | Flexible state and specialty pattern matching |
-| openpyxl | Excel output formatting |
+| regex             | Flexible state and specialty pattern matching      |
+| openpyxl          | Excel output formatting                            |
 
 ---
 
@@ -106,23 +109,27 @@ healthcare-lead-automation/
 ## Setup
 
 ### 1. Clone the repo
+
 ```bash
 git clone https://github.com/pranay-eligeti/healthcare-lead-automation.git
 cd healthcare-lead-automation
 ```
 
 ### 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 3. Configure environment
+
 ```bash
 cp .env.example .env
 # Fill in your API keys in .env
 ```
 
 ### 4. Run the pipeline
+
 ```bash
 python src/pipeline.py --input data/leads.csv --specialty "urgent_care" --state "OH"
 ```
