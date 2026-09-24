@@ -97,7 +97,8 @@ def run_pipeline(
         axis=1,
     )
     df["places_validation"] = [item.reason for item in validation]
-    df = df[[item.valid for item in validation]].copy()
+    validation_mask = validation.map(lambda item: item.valid)
+    df = df.loc[validation_mask].copy()
 
     # 8. Deduplicate by phone + normalized name
     df["_dedupe_name"] = df["name"].apply(normalize_text).str.lower()
