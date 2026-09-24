@@ -1,0 +1,16 @@
+{
+  "urgent care": ["urgent care"],
+  "physical therapy": ["physical therapy", "physiotherapy"],
+  "cardiology": ["cardiology", "cardiologist"],
+  "orthopedics": ["orthopedic", "orthopaedic"],
+  "neurology": ["neurology", "neurologist"],
+  "dermatology": ["dermatology", "dermatologist"],
+  "gastroenterology": ["gastroenterology", "gastroenterologist"],
+  "oncology": ["oncology", "oncologist"],
+  "ophthalmology": ["ophthalmology", "ophthalmologist"],
+  "pediatrics": ["pediatrics", "pediatric"],
+  "psychiatry": ["psychiatry", "psychiatric"],
+  "pulmonology": ["pulmonology", "pulmonary"],
+  "rheumatology": ["rheumatology", "rheumatologist"],
+  "endocrinology": ["endocrinology", "endocrinologist"]
+}
