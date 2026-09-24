@@ -1,173 +1,154 @@
 # 🏥 Healthcare Lead Automation System
 
-> End-to-end Python + n8n pipeline that automatically cleans, filters, and structures healthcare lead data across 14 specialties and 4 states — zero manual intervention.
+> A sanitized, runnable portfolio implementation of a 14-step healthcare lead-data cleaning pattern using Python and configuration-driven validation.
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
-![n8n](https://img.shields.io/badge/n8n-Workflow%20Automation-orange)
-![Monday.com](https://img.shields.io/badge/Monday.com-API-red)
-![pandas](https://img.shields.io/badge/pandas-Data%20Processing-green)
+[![Python CI](https://github.com/pranay-eligeti/healthcare-lead-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/pranay-eligeti/healthcare-lead-automation/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)
+![pandas](https://img.shields.io/badge/pandas-data%20processing-green)
+![pytest](https://img.shields.io/badge/tests-pytest-orange)
 
----
+## What this repository is
 
-## What It Does
+This repository is a **public portfolio adaptation** of a healthcare lead-processing architecture I have used in professional automation work.
 
-Automates the full lifecycle of healthcare lead data — from raw, contaminated exports to clean, verified, specialty-specific CSV files — triggered automatically via Monday.com and n8n without any manual work.
+It is deliberately sanitized. The repository contains **synthetic sample data only** and no PHI, employer exports, credentials, internal URLs, or proprietary source code.
 
----
+The implementation demonstrates the engineering pattern:
 
-## The Problem It Solves
+- deterministic filtering
+- configuration-driven specialty/state rules
+- blacklist protection
+- optional external validation
+- deduplication
+- contact normalization
+- anomaly flags
+- reproducible CSV output
+- automated tests and GitHub Actions CI
 
-Raw healthcare lead files exported from Monday.com were heavily contaminated:
+## Pipeline
 
-- Urgent Care files contained primary care clinics and unrelated businesses
-- No consistent specialty or state filtering
-- Required hours of manual cleaning per batch
+    Input CSV / XLSX
+          |
+          v
+    1. Load
+          |
+    2. Normalize columns
+          |
+    3. Drop empty rows
+          |
+    4. State whitelist
+          |
+    5. Specialty whitelist
+          |
+    6. Blacklist filtering
+          |
+    7. Optional Places validation
+          |
+    8. Name + phone deduplication
+          |
+    9. Phone normalization
+          |
+   10. Email normalization/validation
+          |
+   11. Placeholder removal
+          |
+   12. Anomaly flags
+          |
+   13. Sort/structure
+          |
+   14. Export CSV
 
-This system eliminates all of that.
+The configuration shipped with the repository models **14 specialties** and **4 states** from the broader workflow pattern.
 
----
+## Repository structure
 
-## How It Works
+    healthcare-lead-automation/
+    ├── .github/
+    │   └── workflows/
+    │       └── ci.yml
+    ├── config/
+    │   ├── blacklist.json
+    │   ├── specialties.json
+    │   └── states.json
+    ├── docs/
+    │   └── architecture.md
+    ├── sample_data/
+    │   └── leads.csv
+    ├── src/
+    │   ├── __init__.py
+    │   ├── exporter.py
+    │   ├── filters.py
+    │   ├── formatter.py
+    │   ├── pipeline.py
+    │   └── places_validator.py
+    ├── tests/
+    │   └── test_pipeline.py
+    ├── .env.example
+    ├── .gitignore
+    ├── LICENSE
+    ├── README.md
+    └── requirements.txt
 
-```
-Monday.com (bad-contact flagged)
-        │
-        ▼
-   n8n Webhook Trigger
-        │
-        ▼
-   14-Step Python Cleaning Pipeline
-        │
-        ├── Step 1:  Load file with header=2 (Monday.com export format)
-        ├── Step 2:  Normalize column names
-        ├── Step 3:  Drop empty rows
-        ├── Step 4:  State whitelist filtering (regex-based, flexible)
-        ├── Step 5:  Specialty whitelist matching
-        ├── Step 6:  Blacklist filtering (remove known bad entries)
-        ├── Step 7:  Google Places batch validation
-        ├── Step 8:  Deduplicate by phone + name
-        ├── Step 9:  Phone number formatting
-        ├── Step 10: Email formatting and validation
-        ├── Step 11: Remove placeholder/results rows
-        ├── Step 12: Flag remaining anomalies
-        ├── Step 13: Sort and structure output
-        └── Step 14: Export to clean specialty/state CSV
-        │
-        ▼
-  37+ Clean Output Files
-  (14 specialties × 4 states: AL / OH / IL / IN)
-```
+## Quick start
 
----
+### 1. Clone
 
-## Tech Stack
+    git clone https://github.com/pranay-eligeti/healthcare-lead-automation.git
+    cd healthcare-lead-automation
 
-| Tool              | Purpose                                            |
-| ----------------- | -------------------------------------------------- |
-| Python 3.10+      | Core pipeline logic                                |
-| pandas            | Data loading, filtering, transformation            |
-| n8n               | Webhook trigger and workflow orchestration         |
-| Monday.com API    | Bad-contact detection and board integration        |
-| Google Places API | Provider validation and placeholder row resolution |
-| regex             | Flexible state and specialty pattern matching      |
-| openpyxl          | Excel output formatting                            |
+### 2. Install
 
----
+    python -m venv .venv
+    # Windows:
+    .venv\Scripts\activate
+    # macOS/Linux:
+    source .venv/bin/activate
 
-## Specialties Covered
+    pip install -r requirements.txt
 
-Urgent Care · Physical Therapy · Cardiology · Orthopedics · Neurology · Dermatology · Gastroenterology · Oncology · Ophthalmology · Pediatrics · Psychiatry · Pulmonology · Rheumatology · Endocrinology
+### 3. Run the sample
 
----
+    python -m src.pipeline \
+      --input sample_data/leads.csv \
+      --specialty "cardiology" \
+      --state "OH" \
+      --output output/cardiology_oh.csv
 
-## States Covered
+With no Google Places API key, external validation is skipped so the sample can run locally without credentials.
 
-Alabama (AL) · Ohio (OH) · Illinois (IL) · Indiana (IN)
+### 4. Run tests
 
----
+    pytest -q
 
-## Project Structure
+## Engineering notes
 
-```
-healthcare-lead-automation/
-├── src/
-│   ├── pipeline.py          # Main 14-step cleaning pipeline
-│   ├── filters.py           # Whitelist/blacklist logic
-│   ├── places_validator.py  # Google Places batch lookup
-│   ├── formatter.py         # Phone/email formatting
-│   └── exporter.py          # Output file generation
-├── config/
-│   ├── whitelists/          # Specialty keyword whitelists
-│   └── blacklists/          # Known bad entry patterns
-├── .env.example
-├── requirements.txt
-└── README.md
-```
+**Configuration over hard-coding**  
+Specialty keywords, state aliases, and blacklist patterns live under `config/`.
 
----
+**Safe external dependency**  
+Google Places validation is optional. Local/test runs do not require an API key.
 
-## Setup
+**Data-quality controls**  
+Phone normalization, email validation, duplicate protection, placeholder removal, and anomaly flags are explicit pipeline stages.
 
-### 1. Clone the repo
+**Reproducibility**  
+The project includes sample data, dependency bounds, tests, and GitHub Actions CI.
 
-```bash
-git clone https://github.com/pranay-eligeti/healthcare-lead-automation.git
-cd healthcare-lead-automation
-```
+## Security and privacy
 
-### 2. Install dependencies
+Never commit:
 
-```bash
-pip install -r requirements.txt
-```
+- real healthcare records
+- patient/provider exports containing sensitive information
+- API keys or passwords
+- employer-only workflows or internal URLs
 
-### 3. Configure environment
+Use `.env` for secrets and keep real operational data outside this public repository.
 
-```bash
-cp .env.example .env
-# Fill in your API keys in .env
-```
+## Connection to my professional work
 
-### 4. Run the pipeline
+My professional healthcare automation work includes provider-data acquisition, multi-step cleaning and standardization, data-quality controls, and workflow orchestration. This repository is the **public, sanitized implementation used to demonstrate those engineering patterns** without exposing private business systems.
 
-```bash
-python src/pipeline.py --input data/leads.csv --specialty "urgent_care" --state "OH"
-```
+## License
 
----
-
-## Environment Variables
-
-```env
-# .env.example
-MONDAY_API_KEY=your_monday_api_key_here
-GOOGLE_PLACES_API_KEY=your_google_places_api_key_here
-N8N_WEBHOOK_URL=your_n8n_webhook_url_here
-OUTPUT_DIR=./output
-```
-
----
-
-## Requirements
-
-```
-pandas>=2.0.0
-openpyxl>=3.1.0
-requests>=2.31.0
-python-dotenv>=1.0.0
-```
-
----
-
-## Results
-
-- ✅ 37+ clean specialty/state output files produced
-- ✅ Zero manual file processing
-- ✅ Contamination rate reduced to 0% per output file
-- ✅ Fully automated — triggered by Monday.com, run by n8n
-
----
-
-## Author
-
-**Pranay Eligeti** — [linkedin.com/in/pranay-eligeti](https://linkedin.com/in/pranay-eligeti)
+MIT
