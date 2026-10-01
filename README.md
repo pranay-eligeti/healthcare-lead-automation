@@ -1,4 +1,4 @@
-# 🏥 Healthcare Lead Automation System
+# Healthcare Lead Automation
 
 > A sanitized, runnable portfolio implementation of a 14-step healthcare lead-data cleaning pattern using Python and configuration-driven validation.
 
@@ -119,6 +119,22 @@ With no Google Places API key, external validation is skipped so the sample can 
 ### 4. Run tests
 
     pytest -q
+
+## Output contract
+
+The pipeline exports a sorted CSV with these columns:
+
+| Column | Meaning |
+| --- | --- |
+| `name`, `address`, `specialty`, `state` | Filtered lead fields |
+| `phone`, `email` | Normalized contact values |
+| `places_validation` | External validation result or `skipped:no_api_key` |
+| `email_valid` | Email-format validation flag |
+| `anomaly_flag` | `invalid_phone`, `invalid_email`, or a combined flag |
+
+Invalid contact values are flagged for downstream review. Duplicate protection uses normalized name and phone; it does not perform fuzzy entity resolution. External Places validation is optional. This public pipeline runs directly from Python; employer n8n and Monday.com orchestration is described as professional context, not bundled connectors.
+
+See [architecture notes](docs/architecture.md) for the separation between filtering, formatting, validation, and export.
 
 ## Engineering notes
 
