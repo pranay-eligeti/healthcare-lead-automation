@@ -58,7 +58,7 @@ The implementation demonstrates the engineering pattern:
           |
    14. Export CSV
 
-The configuration shipped with the repository models **14 specialties** and **4 states** from the broader workflow pattern.
+The configuration shipped with the repository models **14 specialties** and **4 states**. Targets must be configured; unsupported targets fail explicitly. CSV and XLSX are supported. Empty filtered populations export the same headers with zero rows.
 
 ## Repository structure
 
@@ -118,7 +118,10 @@ With no Google Places API key, external validation is skipped so the sample can 
 
 ### 4. Run tests
 
+    pip install -r requirements-dev.txt
     pytest -q
+    ruff check src tests
+    ruff format --check src tests
 
 ## Output contract
 
@@ -132,7 +135,7 @@ The pipeline exports a sorted CSV with these columns:
 | `email_valid` | Email-format validation flag |
 | `anomaly_flag` | `invalid_phone`, `invalid_email`, or a combined flag |
 
-Invalid contact values are flagged for downstream review. Duplicate protection uses normalized name and phone; it does not perform fuzzy entity resolution. External Places validation is optional. This public pipeline runs directly from Python; employer n8n and Monday.com orchestration is described as professional context, not bundled connectors.
+Invalid contact values are flagged for downstream review. Missing names are removed and missing contacts are flagged. Duplicate protection uses normalized name and phone; it does not perform fuzzy entity resolution. External Places validation is optional. This public pipeline runs directly from Python; employer n8n and Monday.com orchestration is described as professional context, not bundled connectors.
 
 See [architecture notes](docs/architecture.md) for the separation between filtering, formatting, validation, and export.
 

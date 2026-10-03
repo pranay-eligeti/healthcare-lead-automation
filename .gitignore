@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local configuration, generated exports, and private keys
+.env.*
+!.env.example
+scratch/
+output/
+*.pem
+*.key

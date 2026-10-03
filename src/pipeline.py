@@ -30,18 +30,15 @@ CONFIG_DIR = ROOT / "config"
 
 def load_input(path: str | Path) -> pd.DataFrame:
     source = Path(path)
-    if source.suffix.lower() in {".xlsx", ".xls"}:
-        return pd.read_excel(source)
+    if source.suffix.lower() == ".xlsx":
+        return pd.read_excel(source, dtype=str)
     if source.suffix.lower() == ".csv":
-        return pd.read_csv(source)
+        return pd.read_csv(source, dtype=str)
     raise ValueError(f"Unsupported input format: {source.suffix}")
 
 
 def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
-    renamed = {
-        column: normalize_text(column).lower().replace(" ", "_")
-        for column in df.columns
-    }
+    renamed = {column: normalize_text(column).lower().replace(" ", "_") for column in df.columns}
     return df.rename(columns=renamed)
 
 
@@ -55,6 +52,12 @@ def run_pipeline(
     specialties = load_json(CONFIG_DIR / "specialties.json")
     states = load_json(CONFIG_DIR / "states.json")
     blacklist = load_json(CONFIG_DIR / "blacklist.json")["name_patterns"]
+    specialty = normalize_text(specialty).lower()
+    state = normalize_text(state).upper()
+    if specialty not in specialties or state not in states:
+        raise ValueError(
+            "Target specialty/state must exist in config/specialties.json and config/states.json"
+        )
 
     # 1. Load
     df = load_input(input_path)
@@ -71,59 +74,57 @@ def run_pipeline(
     df = df.dropna(how="all").copy()
 
     # 4. State whitelist
-    df = df[df["state"].apply(lambda value: matches_state(value, state, states))].copy()
+    df = df.loc[
+        df["state"].apply(lambda value: matches_state(value, state, states)).astype(bool)
+    ].copy()
 
     # 5. Specialty whitelist
-    df = df[
-        df["specialty"].apply(
-            lambda value: matches_specialty(value, specialty, specialties)
-        )
+    df = df.loc[
+        df["specialty"]
+        .apply(lambda value: matches_specialty(value, specialty, specialties))
+        .astype(bool)
     ].copy()
 
     # 6. Blacklist filtering
-    df = df[
-        ~df["name"].apply(lambda value: contains_blacklisted(value, blacklist))
+    df = df.loc[
+        ~df["name"].apply(lambda value: contains_blacklisted(value, blacklist)).astype(bool)
     ].copy()
 
     # 7. Optional external validation
-    validator = places_validator or GooglePlacesValidator(
-        os.getenv("GOOGLE_PLACES_API_KEY")
-    )
-    validation = df.apply(
-        lambda row: validator.validate(
+    validator = places_validator or GooglePlacesValidator(os.getenv("GOOGLE_PLACES_API_KEY"))
+    validation = [
+        validator.validate(
             normalize_text(row["name"]),
             normalize_text(row["address"]),
-        ),
-        axis=1,
-    )
+        )
+        for _, row in df.iterrows()
+    ]
     df["places_validation"] = [item.reason for item in validation]
-    validation_mask = validation.map(lambda item: item.valid)
+    validation_mask = pd.Series([item.valid for item in validation], index=df.index, dtype=bool)
     df = df.loc[validation_mask].copy()
 
     # 8. Deduplicate by phone + normalized name
     df["_dedupe_name"] = df["name"].apply(normalize_text).str.lower()
     df["_dedupe_phone"] = df["phone"].apply(normalize_phone)
-    df = df.drop_duplicates(
-        subset=["_dedupe_name", "_dedupe_phone"], keep="first"
-    ).copy()
+    df = df.drop_duplicates(subset=["_dedupe_name", "_dedupe_phone"], keep="first").copy()
 
     # 9. Phone formatting
     df["phone"] = df["phone"].apply(normalize_phone)
 
     # 10. Email normalization and validation
     df["email"] = df["email"].apply(normalize_email)
-    df["email_valid"] = df["email"].apply(is_valid_email)
+    df["email_valid"] = df["email"].apply(is_valid_email).astype(bool)
 
     # 11. Remove placeholder rows
-    df = df[~df["name"].apply(is_placeholder)].copy()
+    df = df.loc[~df["name"].apply(is_placeholder).astype(bool)].copy()
 
     # 12. Flag remaining anomalies
     df["anomaly_flag"] = ""
     df.loc[df["phone"].eq(""), "anomaly_flag"] = "invalid_phone"
     invalid_email = ~df["email_valid"]
-    df.loc[invalid_email, "anomaly_flag"] = df.loc[
-        invalid_email, "anomaly_flag"
-    ].map(lambda value: f"{value};invalid_email".strip(";"))
+    df.loc[invalid_email, "anomaly_flag"] = df.loc[invalid_email, "anomaly_flag"].map(
+        lambda value: f"{value};invalid_email".strip(";")
+    )
 
     # 13. Sort and structure output
     output_columns = [
@@ -137,11 +138,7 @@ def run_pipeline(
         "email_valid",
         "anomaly_flag",
     ]
-    result = (
-        df[output_columns]
-        .sort_values(["state", "specialty", "name"])
-        .reset_index(drop=True)
-    )
+    result = df[output_columns].sort_values(["state", "specialty", "name"]).reset_index(drop=True)
 
     # 14. Export
     write_csv(result, output_path)
@@ -149,9 +146,7 @@ def run_pipeline(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Clean and validate healthcare lead data."
-    )
+    parser = argparse.ArgumentParser(description="Clean and validate healthcare lead data.")
     parser.add_argument("--input", required=True, help="CSV or XLSX input")
     parser.add_argument("--specialty", required=True, help="Target specialty")
     parser.add_argument("--state", required=True, help="Target US state code")

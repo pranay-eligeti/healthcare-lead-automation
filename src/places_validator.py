@@ -7,10 +7,12 @@ from typing import Any
 
 import requests
 
+
 @dataclass(frozen=True)
 class PlacesValidationResult:
     valid: bool
     reason: str
+
 
 class GooglePlacesValidator:
     def __init__(self, api_key: str | None = None, timeout: int = 10) -> None:
@@ -21,12 +23,16 @@ class GooglePlacesValidator:
         if not self.api_key:
             return PlacesValidationResult(True, "skipped:no_api_key")
 
-        response = requests.get(
-            "https://maps.googleapis.com/maps/api/place/textsearch/json",
-            params={"query": f"{name} {address}".strip(), "key": self.api_key},
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
+        try:
+            response = requests.get(
+                "https://maps.googleapis.com/maps/api/place/textsearch/json",
+                params={"query": f"{name} {address}".strip(), "key": self.api_key},
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except requests.RequestException:
+            # Requests exception text can include the API key in a request URL.
+            raise RuntimeError("Google Places validation request failed") from None
         payload: dict[str, Any] = response.json()
         status = payload.get("status")
         if status not in {"OK", "ZERO_RESULTS"}:
